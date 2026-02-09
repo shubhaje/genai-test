@@ -1,11 +1,12 @@
 import pytest
 import ollama
+import json
+import re
 from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import FaithfulnessMetric
 from deepeval.models.base_model import DeepEvalBaseLLM
 
-# 1. Define a Custom Wrapper (The SDET Adapter Pattern)
 class OllamaJudge(DeepEvalBaseLLM):
     def __init__(self, model_name="llama3.2"):
         self.model_name = model_name
@@ -14,11 +15,18 @@ class OllamaJudge(DeepEvalBaseLLM):
         return self.model_name
 
     def generate(self, prompt: str) -> str:
-        # Direct call to the ollama python library
-        response = ollama.chat(model=self.model_name, messages=[
-            {'role': 'user', 'content': prompt},
-        ])
-        return response['message']['content']
+        # 1. Use 'format': 'json' to force Ollama to output valid JSON
+        response = ollama.chat(
+            model=self.model_name,
+            messages=[{'role': 'user', 'content': prompt}],
+            format='json' 
+        )
+        content = response['message']['content']
+        
+        # 2. SDET Safety: Strip any leading/trailing whitespace or markdown backticks
+        # Some models still wrap JSON in ```json { ... } ```
+        content = re.sub(r'```json\s?|```', '', content).strip()
+        return content
 
     async def a_generate(self, prompt: str) -> str:
         return self.generate(prompt)
@@ -26,12 +34,10 @@ class OllamaJudge(DeepEvalBaseLLM):
     def get_model_name(self):
         return self.model_name
 
-# 2. The Test Function
 def test_hallucination_check():
-    # Initialize our custom local judge
-    local_judge = OllamaJudge(model_name="llama3.2")
+    local_judge = OllamaJudge(model_name="llama3:8b")
     
-    # Context vs. Hallucinated Output
+    # We purposefully make this "Unfaithful" to see the test fail correctly
     context = ["The 2026 SDET roadmap requires learning local LLM orchestration."]
     actual_output = "The 2026 roadmap says you only need to learn Manual Testing."
     
@@ -41,7 +47,6 @@ def test_hallucination_check():
         retrieval_context=context
     )
 
-    # Use the FaithfulnessMetric with our Custom Judge
+    # Note: Llama 3.2 might need a lower threshold to be 'sure' of its judgment
     metric = FaithfulnessMetric(threshold=0.5, model=local_judge)
-    
     assert_test(test_case, [metric])
