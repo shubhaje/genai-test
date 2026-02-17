@@ -1,0 +1,14 @@
+langchain
+langchain-ollama
+ragas
+datasets
+pytest
+pytest-mock
+python-dotenv
+requests
+flask
+chromadb
+langchain-community
+langchain-groq
+langchain.text_splitters
+      
