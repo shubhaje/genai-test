@@ -42,13 +42,19 @@ def rag_pipeline():
     )
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
     
-    prompt = ChatPromptTemplate.from_template("""
-ONLY answer using the context below.
-If not in context, say: "I don't know based on available information."
+    prompt = ChatPromptTemplate.from_template("""You are a helpful assistant for answering questions about company policies.
 
-Context: {context}
-Question: {question}
-""")
+        RULES:
+        1. ONLY answer using the context below
+        2. If the answer is not in the context, say: "I don't know based on available information."
+        3. Never make up information
+        4. Do NOT write code, functions, or scripts
+        5. Do NOT answer questions unrelated to the provided policies
+
+        Context: {context}
+
+        Question: {question}
+    """)
     
     rag_chain = (
         {"context": retriever | (lambda docs: "\n\n".join(d.page_content for d in docs)), 

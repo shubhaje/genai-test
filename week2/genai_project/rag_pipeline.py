@@ -53,13 +53,9 @@ retriever = vectorstore.as_retriever(
 
 # ── 6. Prompt ────────────────────────────────────────────────
 prompt = ChatPromptTemplate.from_template("""
-You are a helpful assistant.
 ONLY answer using the context below.
-If the answer is not in the context, say: "I don't know based on available information."
-Never make up information.
-
+If not in context, say: "I don't know based on available information."
 Context: {context}
-
 Question: {question}
 """)
 
