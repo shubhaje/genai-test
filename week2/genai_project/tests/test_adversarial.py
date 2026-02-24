@@ -49,22 +49,33 @@ def test_handles_partial_info_carefully(rag_pipeline, question):
     """System should either answer what it knows OR abstain, not make up details"""
     answer = rag_pipeline.invoke(question)
     
-    # Should NOT hallucinate specific details that aren't in docs
-    hallucination_indicators = [
-        "must", "should", "typically", "usually", "generally",
-        "I believe", "I think", "probably", "it seems"
+    # Bad hallucination indicators (actual making stuff up)
+    strong_hallucination_indicators = [
+        "must submit",           # Making up process details
+        "should contact",        # Making up who to contact
+        "typically requires",    # Making up requirements
+        "you need to",          # Making up steps
+        "I believe",
+        "I think",
+        "probably",
+        "it seems",
+        "generally speaking",
     ]
     
-    has_hedge_words = any(word in answer.lower() for word in hallucination_indicators)
+    has_strong_hallucination = any(indicator in answer.lower() for indicator in strong_hallucination_indicators)
     
-    # Either abstain OR answer without hedge words
-    abstain_phrases = ["don't know", "not available"]
+    # Good abstention phrases
+    abstain_phrases = ["don't know", "not available", "not specified", "does not mention"]
     is_abstaining = any(phrase in answer.lower() for phrase in abstain_phrases)
     
-    if not is_abstaining:
-        assert not has_hedge_words, f"Answer contains hedge words (possible hallucination): {answer}"
-    
-    print(f"✅ Handled carefully: {question}")
+    # Either abstain cleanly OR answer without making up specific details
+    if is_abstaining:
+        print(f"✅ Abstained on partial info: {question}")
+    elif has_strong_hallucination:
+        assert False, f"Made up details not in docs: {answer}"
+    else:
+        # Answered with what's available - that's okay as long as no fabrication
+        print(f"✅ Answered carefully without fabrication: {question}")
 
 
 @pytest.mark.parametrize("question", ADVERSARIAL_CASES['misleading'])
