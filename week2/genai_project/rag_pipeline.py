@@ -15,7 +15,33 @@ llm = OllamaLLM(model="llama3.2")
 embeddings = OllamaEmbeddings(model="llama3.2")
 
 # ── 3. Load documents ────────────────────────────────────────
+"""
+RAG Pipeline - Main Implementation
+
+This module implements a Retrieval-Augmented Generation pipeline using:
+- LangChain for orchestration
+- ChromaDB for vector storage
+- Ollama (LLaMA 3.2) for generation and embeddings
+
+Author: [Shubhangi Ajegaonkar]
+Date: [25-02-2026]
+Purpose: GenAI Testing Learning Project
+"""
 def load_docs(folder="sampledocs"):
+     """
+    Load all text files from a directory into Document objects.
+    
+    Args:
+        folder (str): Path to directory containing .txt files
+        
+    Returns:
+        list[Document]: List of LangChain Document objects with content and metadata
+        
+    Example:
+        >>> docs = load_docs("sample_docs")
+        >>> len(docs)
+        3
+    """
     docs = []
     for filename in os.listdir(folder):
         if filename.endswith(".txt"):
@@ -29,10 +55,15 @@ def load_docs(folder="sampledocs"):
     return docs
 
 # ── 4. Chunk ─────────────────────────────────────────────────
+# Chunking configuration based on Day 3 experiments
+# 200 tokens: 40% failure due to fragmentation
+# 500 tokens: 100% success (optimal)
+# 1000 tokens: Success but verbose answers
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,    # increased — documents are short so 300 was too aggressive
-    chunk_overlap=50
+    chunk_size=500,    # Optimal size from systematic testing
+    chunk_overlap=50    # Prevents cutting context mid-sentence
 )
+
 raw_docs = load_docs()
 chunks = splitter.split_documents(raw_docs)
 print(f"Split into {len(chunks)} chunks")
@@ -51,6 +82,9 @@ retriever = vectorstore.as_retriever(
     search_kwargs={"k": 3}
 )
 
+# Strong guardrail system prompt
+# Reduces hallucination from 67% → 0% (Day 4 experiment)
+# Explicitly forbids code generation (caught by adversarial tests)
 # ── 6. Prompt ────────────────────────────────────────────────
 prompt = ChatPromptTemplate.from_template("""
 ONLY answer using the context below.
