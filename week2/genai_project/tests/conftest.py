@@ -8,12 +8,25 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+"""
+pytest Configuration and Fixtures
 
+Provides reusable fixtures for RAG pipeline testing:
+- rag_pipeline: Session-scoped RAG chain (built once, reused)
+- sample_questions: Golden dataset for testing
+"""
 @pytest.fixture(scope="session")
 def rag_pipeline():
     """
-    Fixture that creates a RAG pipeline once for all tests.
-    Scope='session' means it's created once and reused.
+    Create RAG pipeline fixture for all tests.
+    
+    Scope: session (created once, reused across all tests)
+    
+    Returns:
+        RunnableSequence: Complete RAG chain
+        
+    Note:
+        Uses test_chroma directory to avoid conflicts with main pipeline
     """
     print("\n🔧 Setting up RAG pipeline for tests...")
     
